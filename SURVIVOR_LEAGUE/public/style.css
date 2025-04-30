@@ -1,0 +1,77 @@
+/* Basic reset and base styles */
+body {
+  margin: 0;
+  padding: 0;
+  background: #f9f9f9;
+  font-family: Arial, sans-serif;
+  color: #333;
+  text-align: center;
+}
+
+/* Container centering */
+.container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+/* Title styles */
+.title {
+  font-size: 1.5em;
+  margin-bottom: 0.2em;
+}
+.subtitle {
+  font-size: 1em;
+  margin-bottom: 2em;
+  color: #555;
+}
+
+/* Button styles */
+.button {
+  display: inline-block;
+  padding: 0.75em 1.5em;
+  margin: 0.5em;
+  font-size: 1em;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  text-decoration: none;
+  /* Smooth transition for hover effects */
+  transition: background 0.3s, opacity 0.3s;
+}
+
+/* Primary button (Connect) */
+.button.primary {
+  background: #4CAF50;       /* green background for connect */
+  color: #fff;
+}
+.button.primary:hover {
+  background: #45a047;       /* slightly darker on hover */
+}
+
+/* Secondary button (Buy) */
+.button.secondary {
+  background: #008CBA;       /* blue background for buy */
+  color: #fff;
+}
+.button.secondary:hover {
+  background: #007eb5;
+}
+
+/* Disabled button state */
+.button:disabled,
+.button.disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* Error message text */
+.error {
+  color: #d33;
+  font-weight: bold;
+  margin-top: 1em;
+}
+
