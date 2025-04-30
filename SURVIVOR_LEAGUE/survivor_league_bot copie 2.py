@@ -154,78 +154,68 @@ def update_leaderboard_yearly():
 # ----------------- Handlers Utilisateur -----------------
 @bot.message_handler(commands=["start"])
 def start(message):
+    # WebApp button markup
     markup = ReplyKeyboardMarkup(resize_keyboard=True)
     markup.add(
-        KeyboardButton("🪪 Connect Survivor Wallet", web_app=WebAppInfo(url="https://survivor-pass.vercel.app"))
-    )
-    bot.send_message(
-        message.chat.id,
-        "👋 Welcome to Survivor League!\n\nClick the button below to connect your wallet 👇",
-        reply_markup=markup
+        KeyboardButton("🪪 Connect Survivor Wallet", web_app=WebAppInfo(url="survivor-league-v1.vercel.app"))
     )
 
+    # Welcome message with game instructions
     welcome_message = (
         "👋 *Welcome to Survivor League!*\n\n"
         "Each week, pick a team you believe will *win*.\n"
-        "⚽ If they win, you *survive*. If they *lose or draw*, you're *eliminated by the Kraken* (or Burn 3 points).\n\n"
+        "⚽ If they win, you *survive*. If they *lose or draw*, you're *eliminated by the Kraken* "
+        "(or burn 3 points to stay on the boat).\n\n"
         "🔥 *Monthly survivors* split rewards (50% of the pool).\n"
         "🏆 *Top 11 and Top 25%* at the end of the season share the Season Pool (remaining 50%).\n\n"
-        "🎮 Ready to kick off?\nClick below to get started 👇"
+        "🪪 *Step 1: Connect your wallet below to start playing* 👇"
     )
 
-    bot.send_message(message.chat.id, welcome_message, reply_markup=markup, parse_mode="Markdown")
+    bot.send_message(
+        message.chat.id,
+        welcome_message,
+        reply_markup=markup,
+        parse_mode="Markdown"
+    )
 
-@bot.message_handler(content_types=['web_app_data'])
+@bot.message_handler(content_types=["web_app_data"])
 def handle_webapp_data(message):
     data = message.web_app_data.data
     user_id = message.from_user.id
-    chat_id = message.chat.id
 
     try:
         payload = json.loads(data)
-        action = payload.get("action")
-        wallet_address = payload.get("address")
-        signature_b64 = payload.get("signature")
-        signed_message = payload.get("message")
-
-        if not (wallet_address and signature_b64 and signed_message):
-            bot.send_message(chat_id, "⚠️ Incomplete data received. Please try again.")
-            return
-        if not signed_message.startswith("Survivor League Verification"):
-            bot.send_message(chat_id, "⚠️ Invalid signed message format.")
-            return
-
-        # Decode public key and signature
-        pubkey_bytes = base58.b58decode(wallet_address)
-        signature_bytes = base64.b64decode(signature_b64)
-
-        # Verify signature
-        try:
-            verify_key = nacl.signing.VerifyKey(pubkey_bytes)
-            verify_key.verify(signed_message.encode(), signature_bytes)
-        except nacl.exceptions.BadSignatureError:
-            bot.send_message(chat_id, "❌ Invalid signature. Wallet not verified.")
-            return
-
-        # Signature is valid, save to Supabase
-        supabase.table("users").upsert({
-            "telegram_id": str(user_id),
-            "wallet_address": wallet_address,
-            "created_at": datetime.datetime.utcnow().isoformat()
-        }, on_conflict="telegram_id").execute()
-
-        bot.send_message(chat_id, "✅ Wallet verified and connected successfully!")
-
-        # Optionally check NFT pass
-        if not has_nft_pass(wallet_address):  # À implémenter selon ta logique
-            bot.send_message(chat_id, "🎟️ No SURVIVOR PASS detected.\nPlease buy one to join the game.")
-        else:
-            bot.send_message(chat_id, "🎫 Pass verified. You're ready to play!")
-            show_main_menu(chat_id)
-
     except Exception as e:
-        logging.error(f"[web_app_data error] {e}")
-        bot.send_message(chat_id, "⚠️ Error verifying your wallet. Please retry.")
+        logging.error(f"Invalid web app data: {e}")
+        bot.send_message(user_id, "❌ Invalid data format received.")
+        return
+
+    address = payload.get("address")
+    signature = payload.get("signature")
+    message_to_sign = "SURVIVOR PASS Verification"
+
+    if not address or not signature:
+        bot.send_message(user_id, "❌ Missing wallet address or signature.")
+        return
+
+    # Vérifie la signature Solana
+    if not verify_solana_signature(address, signature, message_to_sign):
+        bot.send_message(user_id, "❌ Signature verification failed. Make sure you signed the correct message.")
+        return
+
+    # Enregistre dans Supabase
+    supabase.table("users").upsert({
+        "telegram_id": str(user_id),
+        "wallet_address": address,
+        "created_at": datetime.datetime.utcnow().isoformat()
+    }, on_conflict="telegram_id").execute()
+
+    # Vérifie si le pass NFT est présent
+    if not has_nft_pass(address):
+        prompt_purchase(message.chat.id)
+    else:
+        bot.send_message(message.chat.id, "🎫 Survivor Pass found – you're ready to play!")
+        show_main_menu(message.chat.id)
 
 def verify_wallet_signature(wallet_address, signature, user_id):
     try:
@@ -245,6 +235,22 @@ def verify_wallet_signature(wallet_address, signature, user_id):
         print(f"Verification error: {e}")
         return False
 
+def verify_solana_signature(address: str, signature: str, message: str) -> bool:
+    """
+    Vérifie que `signature` est bien une signature valide de `message` par `address`.
+    """
+    try:
+        public_key_bytes = base58.b58decode(address)
+        signature_bytes = base64.b64decode(signature)
+        message_bytes = message.encode("utf-8")
+
+        verify_key = nacl.signing.VerifyKey(public_key_bytes)
+        verify_key.verify(message_bytes, signature_bytes)
+
+        return True
+    except (ValueError, nacl.exceptions.BadSignatureError):
+        return False
+    
 def has_nft_pass(wallet_address):
     try:
         # Ici tu dois checker la blockchain. Exemple : requête Helius ou Crossmint API
