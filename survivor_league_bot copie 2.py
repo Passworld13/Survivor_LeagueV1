@@ -154,10 +154,11 @@ def update_leaderboard_yearly():
 # ----------------- Handlers Utilisateur -----------------
 @bot.message_handler(commands=["start"])
 def start(message):
-    markup = ReplyKeyboardMarkup(resize_keyboard=True)
+    markup = InlineKeyboardMarkup()
     markup.add(
-        KeyboardButton("🪪 Connect Survivor Wallet", url="https://survivor-league-v1.vercel.app")
+        InlineKeyboardButton("🪪 Connect Survivor Wallet", url="https://survivor-league-v1.vercel.app")
     )
+
     bot.send_message(
         message.chat.id,
         "👋 Welcome to Survivor League!\n\nClick the button below to connect your wallet 👇",
