@@ -156,7 +156,7 @@ def update_leaderboard_yearly():
 def start(message):
     markup = ReplyKeyboardMarkup(resize_keyboard=True)
     markup.add(
-        KeyboardButton("🪪 Connect Survivor Wallet", web_app=WebAppInfo(url="https://survivor-pass.vercel.app"))
+        KeyboardButton("🪪 Connect Survivor Wallet", web_app=WebAppInfo(url="https://survivor-league-v1.vercel.app"))
     )
     bot.send_message(
         message.chat.id,
