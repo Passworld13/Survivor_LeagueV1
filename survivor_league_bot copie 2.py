@@ -155,15 +155,8 @@ def update_leaderboard_yearly():
 @bot.message_handler(commands=["start"])
 def start(message):
     markup = InlineKeyboardMarkup()
-    markup.add(
-        InlineKeyboardButton("🪪 Connect Survivor Wallet", url="https://survivor-league-v1.vercel.app")
-    )
-
-    bot.send_message(
-        message.chat.id,
-        "👋 Welcome to Survivor League!\n\nClick the button below to connect your wallet 👇",
-        reply_markup=markup
-    )
+    markup.add(InlineKeyboardButton("🪪 Connect Survivor Wallet", web_app=WebAppInfo(url="https://survivor-league-v1.vercel.app")))
+    bot.send_message(message.chat.id, "Click below to connect your wallet 👇", reply_markup=markup)
 
     welcome_message = (
         "👋 *Welcome to Survivor League!*\n\n"
